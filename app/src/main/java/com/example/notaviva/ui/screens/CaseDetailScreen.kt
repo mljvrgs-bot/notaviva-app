@@ -28,9 +28,12 @@ fun CaseDetailScreen(
     onEdit: (Long) -> Unit,
     onDeleted: () -> Unit
 ) {
-    val case by viewModel.getCaseFlow(caseId).collectAsState()
-    val interviews by viewModel.getInterviews(caseId).collectAsState()
-    val evidences by viewModel.getEvidences(caseId).collectAsState()
+    // Se envuelve en remember(caseId) para que el StateFlow se cree una sola vez
+    // por caso, y no en cada recomposicion (evita el parpadeo/loop infinito
+    // que causaba llamar a viewModel.getXxxFlow(caseId) directo en el cuerpo).
+    val case by remember(caseId) { viewModel.getCaseFlow(caseId) }.collectAsState()
+    val interviews by remember(caseId) { viewModel.getInterviews(caseId) }.collectAsState()
+    val evidences by remember(caseId) { viewModel.getEvidences(caseId) }.collectAsState()
 
     var tab by remember { mutableStateOf(0) }
     var showDeleteCase by remember { mutableStateOf(false) }
