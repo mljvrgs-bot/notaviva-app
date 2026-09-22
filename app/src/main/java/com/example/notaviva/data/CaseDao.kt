@@ -13,11 +13,11 @@ interface CaseDao {
     fun getById(caseId: Long): Flow<CaseEntity?>
 
     @Insert
-    suspend fun insert(case: CaseEntity): Long
+    suspend fun insert(caseEntity: CaseEntity): Long
 
     @Update
-    suspend fun update(case: CaseEntity)
+    suspend fun update(caseEntity: CaseEntity)
 
     @Delete
-    suspend fun delete(case: CaseEntity)
+    suspend fun delete(caseEntity: CaseEntity)
 }
