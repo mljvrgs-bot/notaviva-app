@@ -12,6 +12,9 @@ interface InterviewDao {
     @Insert
     suspend fun insert(interview: InterviewEntity): Long
 
+    @Update
+    suspend fun update(interview: InterviewEntity)
+
     @Delete
     suspend fun delete(interview: InterviewEntity)
 }

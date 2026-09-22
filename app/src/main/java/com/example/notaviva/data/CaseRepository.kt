@@ -25,6 +25,9 @@ class CaseRepository(private val db: AppDatabase) {
 
     suspend fun addInterview(interview: InterviewEntity) = db.interviewDao().insert(interview)
 
+    // Nuevo: delega al DAO la actualizacion de una entrevista ya existente.
+    suspend fun updateInterview(interview: InterviewEntity) = db.interviewDao().update(interview)
+
     suspend fun deleteInterview(interview: InterviewEntity) = db.interviewDao().delete(interview)
 
     // ---- Evidencias ----
