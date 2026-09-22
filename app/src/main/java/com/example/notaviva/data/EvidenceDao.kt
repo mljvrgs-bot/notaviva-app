@@ -12,6 +12,10 @@ interface EvidenceDao {
     @Insert
     suspend fun insert(evidence: EvidenceEntity): Long
 
+    // Nuevo: permite editar una evidencia existente, igual que en InterviewDao.
+    @Update
+    suspend fun update(evidence: EvidenceEntity)
+
     @Delete
     suspend fun delete(evidence: EvidenceEntity)
 }

@@ -25,7 +25,6 @@ class CaseRepository(private val db: AppDatabase) {
 
     suspend fun addInterview(interview: InterviewEntity) = db.interviewDao().insert(interview)
 
-    // Nuevo: delega al DAO la actualizacion de una entrevista ya existente.
     suspend fun updateInterview(interview: InterviewEntity) = db.interviewDao().update(interview)
 
     suspend fun deleteInterview(interview: InterviewEntity) = db.interviewDao().delete(interview)
@@ -35,6 +34,9 @@ class CaseRepository(private val db: AppDatabase) {
         db.evidenceDao().getByCaseId(caseId)
 
     suspend fun addEvidence(evidence: EvidenceEntity) = db.evidenceDao().insert(evidence)
+
+    // Nuevo: delega al DAO la actualizacion de una evidencia ya existente.
+    suspend fun updateEvidence(evidence: EvidenceEntity) = db.evidenceDao().update(evidence)
 
     suspend fun deleteEvidence(evidence: EvidenceEntity) = db.evidenceDao().delete(evidence)
 }

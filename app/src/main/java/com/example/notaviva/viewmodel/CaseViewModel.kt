@@ -65,9 +65,6 @@ class CaseViewModel(private val repository: CaseRepository) : ViewModel() {
         }
     }
 
-    // Nuevo: actualiza una entrevista existente. Recibe la entidad completa
-    // (normalmente construida con .copy() a partir de la entrevista original)
-    // porque Room necesita el id para saber cual fila actualizar.
     fun updateInterview(interview: InterviewEntity) {
         viewModelScope.launch { repository.updateInterview(interview) }
     }
@@ -84,6 +81,11 @@ class CaseViewModel(private val repository: CaseRepository) : ViewModel() {
         viewModelScope.launch {
             repository.addEvidence(EvidenceEntity(caseId = caseId, name = name, description = description))
         }
+    }
+
+    // Nuevo: mismo patron que updateInterview, aplicado a Evidencia.
+    fun updateEvidence(evidence: EvidenceEntity) {
+        viewModelScope.launch { repository.updateEvidence(evidence) }
     }
 
     fun deleteEvidence(evidence: EvidenceEntity) {
