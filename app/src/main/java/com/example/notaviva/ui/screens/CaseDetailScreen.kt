@@ -38,6 +38,10 @@ fun CaseDetailScreen(
     var showAddEvidence by remember { mutableStateOf(false) }
     var statusMenuExpanded by remember { mutableStateOf(false) }
 
+    // Nuevo: guarda la entrevista que se esta editando (null = no hay dialogo de edicion abierto).
+    // Usamos la entrevista completa (no solo el id) para poder precargar sus campos en el formulario.
+    var interviewBeingEdited by remember { mutableStateOf<InterviewEntity?>(null) }
+
     val currentCase = case
     if (currentCase == null) {
         Box(Modifier.fillMaxSize(), contentAlignment = androidx.compose.ui.Alignment.Center) {
@@ -45,6 +49,11 @@ fun CaseDetailScreen(
         }
         return
     }
+
+    // Regla de negocio: un caso cerrado no debe permitir editar sus entrevistas.
+    // Es una decision de diseno (el enunciado no lo detalla explicitamente),
+    // consistente con que el cierre representa el fin de la investigacion.
+    val caseIsClosed = !CaseUtils.canModifyCaseContent(CaseStatus.fromName(currentCase.status))
 
     Scaffold(
         topBar = {
@@ -98,7 +107,9 @@ fun CaseDetailScreen(
                 0 -> ResumenTab(currentCase.description)
                 1 -> EntrevistasTab(
                     interviews = interviews,
+                    readOnly = caseIsClosed,
                     onAdd = { showAddInterview = true },
+                    onEdit = { interviewBeingEdited = it },
                     onDelete = { viewModel.deleteInterview(it) }
                 )
                 2 -> ConclusionTab(
@@ -137,6 +148,18 @@ fun CaseDetailScreen(
         )
     }
 
+    // Nuevo: dialogo de edicion. Solo se muestra si interviewBeingEdited no es null.
+    interviewBeingEdited?.let { interview ->
+        EditInterviewDialog(
+            interview = interview,
+            onDismiss = { interviewBeingEdited = null },
+            onSave = { updated ->
+                viewModel.updateInterview(updated)
+                interviewBeingEdited = null
+            }
+        )
+    }
+
     if (showAddEvidence) {
         AddEvidenceDialog(
             onDismiss = { showAddEvidence = false },
@@ -160,7 +183,9 @@ private fun ResumenTab(description: String) {
 @Composable
 private fun EntrevistasTab(
     interviews: List<InterviewEntity>,
+    readOnly: Boolean,
     onAdd: () -> Unit,
+    onEdit: (InterviewEntity) -> Unit,
     onDelete: (InterviewEntity) -> Unit
 ) {
     Column(Modifier.padding(16.dp).fillMaxSize()) {
@@ -170,11 +195,22 @@ private fun EntrevistasTab(
             verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
         ) {
             Text("Entrevistas (${interviews.size})", fontWeight = FontWeight.Bold)
-            TextButton(onClick = onAdd) {
-                Icon(Icons.Default.Add, contentDescription = null)
-                Spacer(Modifier.width(4.dp))
-                Text("Nueva entrevista")
+            // Si el caso esta cerrado no se permite agregar nuevas entrevistas.
+            if (!readOnly) {
+                TextButton(onClick = onAdd) {
+                    Icon(Icons.Default.Add, contentDescription = null)
+                    Spacer(Modifier.width(4.dp))
+                    Text("Nueva entrevista")
+                }
             }
+        }
+        if (readOnly) {
+            Spacer(Modifier.height(4.dp))
+            Text(
+                "Este caso está cerrado: las entrevistas no se pueden modificar.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error
+            )
         }
         Spacer(Modifier.height(8.dp))
         if (interviews.isEmpty()) {
@@ -190,8 +226,14 @@ private fun EntrevistasTab(
                                 Spacer(Modifier.height(4.dp))
                                 Text("Hallazgos: ${interview.findings}")
                             }
-                            IconButton(onClick = { onDelete(interview) }) {
-                                Icon(Icons.Default.Delete, contentDescription = "Eliminar")
+                            // Los botones de editar/eliminar solo aparecen si el caso no esta cerrado.
+                            if (!readOnly) {
+                                IconButton(onClick = { onEdit(interview) }) {
+                                    Icon(Icons.Default.Edit, contentDescription = "Editar")
+                                }
+                                IconButton(onClick = { onDelete(interview) }) {
+                                    Icon(Icons.Default.Delete, contentDescription = "Eliminar")
+                                }
                             }
                         }
                     }
@@ -287,6 +329,50 @@ private fun AddInterviewDialog(
         confirmButton = {
             TextButton(
                 onClick = { if (name.isNotBlank()) onSave(name, date, findings) },
+                enabled = name.isNotBlank()
+            ) { Text("Guardar") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } }
+    )
+}
+
+// Nuevo: dialogo de edicion de entrevista.
+// Recibe la entrevista original para precargar los campos, y devuelve
+// (via onSave) una copia actualizada con los nuevos valores.
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun EditInterviewDialog(
+    interview: InterviewEntity,
+    onDismiss: () -> Unit,
+    onSave: (InterviewEntity) -> Unit
+) {
+    // remember(interview.id) asegura que si se abre el dialogo para otra entrevista
+    // distinta, los campos se reinicien con los valores de la nueva entrevista.
+    var name by remember(interview.id) { mutableStateOf(interview.personName) }
+    var date by remember(interview.id) { mutableStateOf(interview.date) }
+    var findings by remember(interview.id) { mutableStateOf(interview.findings) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Editar entrevista") },
+        text = {
+            Column {
+                OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Nombre del entrevistado") }, singleLine = true)
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(value = date, onValueChange = { date = it }, label = { Text("Fecha") }, singleLine = true)
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(value = findings, onValueChange = { findings = it }, label = { Text("Hallazgos principales") })
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    if (name.isNotBlank()) {
+                        // .copy() crea una nueva instancia de la data class InterviewEntity,
+                        // conservando id y caseId, pero con los campos editados.
+                        onSave(interview.copy(personName = name, date = date, findings = findings))
+                    }
+                },
                 enabled = name.isNotBlank()
             ) { Text("Guardar") }
         },

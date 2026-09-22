@@ -74,4 +74,33 @@ class CaseUtilsTest {
         assertEquals(CaseStatus.EN_INVESTIGACION, CaseStatus.fromName("VALOR_INVALIDO"))
         assertEquals(CaseStatus.PUBLICADO, CaseStatus.fromName("PUBLICADO"))
     }
+
+    // ---- Entrevistas: validaciones ----
+
+    @Test
+    fun `isValidInterview requires person name date and findings`() {
+        assertTrue(CaseUtils.isValidInterview("Juan Pérez", "10/03/2025", "Confirmó el hallazgo"))
+        assertFalse(CaseUtils.isValidInterview("", "10/03/2025", "Confirmó el hallazgo"))
+        assertFalse(CaseUtils.isValidInterview("Juan Pérez", "", "Confirmó el hallazgo"))
+        assertFalse(CaseUtils.isValidInterview("Juan Pérez", "10/03/2025", ""))
+    }
+
+    @Test
+    fun `isValidInterview rejects blank-only values`() {
+        // Cadenas de solo espacios deben tratarse como vacías, no como datos válidos.
+        assertFalse(CaseUtils.isValidInterview("   ", "10/03/2025", "hallazgo"))
+    }
+
+    // ---- Estados: restricción de caso cerrado ----
+
+    @Test
+    fun `canModifyCaseContent is true while case is not closed`() {
+        assertTrue(CaseUtils.canModifyCaseContent(CaseStatus.EN_INVESTIGACION))
+        assertTrue(CaseUtils.canModifyCaseContent(CaseStatus.PUBLICADO))
+    }
+
+    @Test
+    fun `canModifyCaseContent is false once case is closed`() {
+        assertFalse(CaseUtils.canModifyCaseContent(CaseStatus.CERRADO))
+    }
 }

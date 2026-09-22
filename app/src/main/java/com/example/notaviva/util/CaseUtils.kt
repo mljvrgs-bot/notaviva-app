@@ -18,7 +18,7 @@ object CaseUtils {
         val normalized = query.trim()
         return cases.filter {
             it.title.contains(normalized, ignoreCase = true) ||
-                it.description.contains(normalized, ignoreCase = true)
+                    it.description.contains(normalized, ignoreCase = true)
         }
     }
 
@@ -31,4 +31,15 @@ object CaseUtils {
 
     fun countByStatus(cases: List<CaseEntity>, status: CaseStatus): Int =
         cases.count { CaseStatus.fromName(it.status) == status }
+
+    // Nuevo: valida los campos obligatorios de una entrevista antes de guardarla.
+    // Se exige nombre, fecha y hallazgos porque el registro sin hallazgos
+    // no aporta informacion util para el periodista.
+    fun isValidInterview(personName: String, date: String, findings: String): Boolean =
+        personName.isNotBlank() && date.isNotBlank() && findings.isNotBlank()
+
+    // Nuevo: decision de diseno. Un caso CERRADO ya no admite cambios en su
+    // contenido asociado (entrevistas, evidencias). Se centraliza aqui para
+    // que la UI y las pruebas usen la misma regla, en vez de repetirla.
+    fun canModifyCaseContent(status: CaseStatus): Boolean = status != CaseStatus.CERRADO
 }
