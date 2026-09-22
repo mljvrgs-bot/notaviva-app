@@ -41,5 +41,18 @@ object CaseUtils {
     // Nuevo: decision de diseno. Un caso CERRADO ya no admite cambios en su
     // contenido asociado (entrevistas, evidencias). Se centraliza aqui para
     // que la UI y las pruebas usen la misma regla, en vez de repetirla.
+    // Nuevo: decision de diseno. Un caso CERRADO ya no admite cambios en su
+    // contenido asociado (entrevistas, evidencias). Se centraliza aqui para
+    // que la UI y las pruebas usen la misma regla, en vez de repetirla.
     fun canModifyCaseContent(status: CaseStatus): Boolean = status != CaseStatus.CERRADO
+
+    // Nuevo: decision de diseno. No se puede transicionar un caso a CERRADO
+    // si todavia no tiene conclusion escrita (reutiliza canClose). Para
+    // cualquier otro estado destino, la transicion siempre esta permitida.
+    fun canChangeStatusTo(case: CaseEntity, newStatus: CaseStatus): Boolean =
+        if (newStatus == CaseStatus.CERRADO) canClose(case) else true
+
+    // Nuevo: valida los campos obligatorios de una evidencia antes de guardarla.
+    fun isValidEvidence(name: String, description: String): Boolean =
+        name.isNotBlank() && description.isNotBlank()
 }

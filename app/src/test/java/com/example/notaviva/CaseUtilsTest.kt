@@ -87,11 +87,11 @@ class CaseUtilsTest {
 
     @Test
     fun `isValidInterview rejects blank-only values`() {
-        // Cadenas de solo espacios deben tratarse como vacías, no como datos válidos.
+        // Cadenas de solo espacios deben tratarse como vacias, no como datos validos.
         assertFalse(CaseUtils.isValidInterview("   ", "10/03/2025", "hallazgo"))
     }
 
-    // ---- Estados: restricción de caso cerrado ----
+    // ---- Estados: restriccion de caso cerrado ----
 
     @Test
     fun `canModifyCaseContent is true while case is not closed`() {
@@ -102,5 +102,40 @@ class CaseUtilsTest {
     @Test
     fun `canModifyCaseContent is false once case is closed`() {
         assertFalse(CaseUtils.canModifyCaseContent(CaseStatus.CERRADO))
+    }
+
+    // ---- Cierre del caso: transicion de estado ----
+
+    @Test
+    fun `canChangeStatusTo blocks closing without a conclusion`() {
+        val caseWithoutConclusion = sampleCases[0]
+        assertFalse(CaseUtils.canChangeStatusTo(caseWithoutConclusion, CaseStatus.CERRADO))
+    }
+
+    @Test
+    fun `canChangeStatusTo allows closing once conclusion is written`() {
+        val caseWithConclusion = sampleCases[0].copy(conclusion = "Se confirmó la irregularidad.")
+        assertTrue(CaseUtils.canChangeStatusTo(caseWithConclusion, CaseStatus.CERRADO))
+    }
+
+    @Test
+    fun `canChangeStatusTo allows any transition that is not closing`() {
+        val caseWithoutConclusion = sampleCases[0]
+        assertTrue(CaseUtils.canChangeStatusTo(caseWithoutConclusion, CaseStatus.EN_INVESTIGACION))
+        assertTrue(CaseUtils.canChangeStatusTo(caseWithoutConclusion, CaseStatus.PUBLICADO))
+    }
+
+    // ---- Evidencias: validaciones ----
+
+    @Test
+    fun `isValidEvidence requires name and description`() {
+        assertTrue(CaseUtils.isValidEvidence("Factura #123", "Contrato con sobrecosto"))
+        assertFalse(CaseUtils.isValidEvidence("", "Contrato con sobrecosto"))
+        assertFalse(CaseUtils.isValidEvidence("Factura #123", ""))
+    }
+
+    @Test
+    fun `isValidEvidence rejects blank-only values`() {
+        assertFalse(CaseUtils.isValidEvidence("   ", "descripcion"))
     }
 }

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.notaviva.CaseUtilsTest" tests="18" skipped="0" failures="0" errors="0" timestamp="2026-09-22T23:40:49" hostname="VINOROJO" time="0.234">
+  <properties/>
+  <testcase name="isValidEvidence rejects blank-only values" classname="com.example.notaviva.CaseUtilsTest" time="0.142"/>
+  <testcase name="canChangeStatusTo allows closing once conclusion is written" classname="com.example.notaviva.CaseUtilsTest" time="0.004"/>
+  <testcase name="canClose is false when conclusion is blank" classname="com.example.notaviva.CaseUtilsTest" time="0.001"/>
+  <testcase name="isValidInterview rejects blank-only values" classname="com.example.notaviva.CaseUtilsTest" time="0.001"/>
+  <testcase name="isValidCase requires title description and date" classname="com.example.notaviva.CaseUtilsTest" time="0.001"/>
+  <testcase name="countByStatus counts correctly per status" classname="com.example.notaviva.CaseUtilsTest" time="0.001"/>
+  <testcase name="filterCases matches by title case-insensitively" classname="com.example.notaviva.CaseUtilsTest" time="0.017"/>
+  <testcase name="canModifyCaseContent is true while case is not closed" classname="com.example.notaviva.CaseUtilsTest" time="0.003"/>
+  <testcase name="isValidInterview requires person name date and findings" classname="com.example.notaviva.CaseUtilsTest" time="0.002"/>
+  <testcase name="canChangeStatusTo blocks closing without a conclusion" classname="com.example.notaviva.CaseUtilsTest" time="0.004"/>
+  <testcase name="isValidEvidence requires name and description" classname="com.example.notaviva.CaseUtilsTest" time="0.001"/>
+  <testcase name="canChangeStatusTo allows any transition that is not closing" classname="com.example.notaviva.CaseUtilsTest" time="0.004"/>
+  <testcase name="filterCases returns empty list when nothing matches" classname="com.example.notaviva.CaseUtilsTest" time="0.006"/>
+  <testcase name="canClose is true when conclusion is present" classname="com.example.notaviva.CaseUtilsTest" time="0.008"/>
+  <testcase name="filterCases returns all cases when query is blank" classname="com.example.notaviva.CaseUtilsTest" time="0.007"/>
+  <testcase name="filterCases matches by description" classname="com.example.notaviva.CaseUtilsTest" time="0.001"/>
+  <testcase name="canModifyCaseContent is false once case is closed" classname="com.example.notaviva.CaseUtilsTest" time="0.003"/>
+  <testcase name="CaseStatus fromName defaults to EN_INVESTIGACION for unknown values" classname="com.example.notaviva.CaseUtilsTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

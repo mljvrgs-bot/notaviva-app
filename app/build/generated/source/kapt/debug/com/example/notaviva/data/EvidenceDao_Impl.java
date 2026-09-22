@@ -35,6 +35,8 @@ public final class EvidenceDao_Impl implements EvidenceDao {
 
   private final EntityDeletionOrUpdateAdapter<EvidenceEntity> __deletionAdapterOfEvidenceEntity;
 
+  private final EntityDeletionOrUpdateAdapter<EvidenceEntity> __updateAdapterOfEvidenceEntity;
+
   public EvidenceDao_Impl(@NonNull final RoomDatabase __db) {
     this.__db = __db;
     this.__insertionAdapterOfEvidenceEntity = new EntityInsertionAdapter<EvidenceEntity>(__db) {
@@ -74,6 +76,31 @@ public final class EvidenceDao_Impl implements EvidenceDao {
         statement.bindLong(1, entity.getId());
       }
     };
+    this.__updateAdapterOfEvidenceEntity = new EntityDeletionOrUpdateAdapter<EvidenceEntity>(__db) {
+      @Override
+      @NonNull
+      protected String createQuery() {
+        return "UPDATE OR ABORT `evidences` SET `id` = ?,`caseId` = ?,`name` = ?,`description` = ? WHERE `id` = ?";
+      }
+
+      @Override
+      protected void bind(@NonNull final SupportSQLiteStatement statement,
+          @NonNull final EvidenceEntity entity) {
+        statement.bindLong(1, entity.getId());
+        statement.bindLong(2, entity.getCaseId());
+        if (entity.getName() == null) {
+          statement.bindNull(3);
+        } else {
+          statement.bindString(3, entity.getName());
+        }
+        if (entity.getDescription() == null) {
+          statement.bindNull(4);
+        } else {
+          statement.bindString(4, entity.getDescription());
+        }
+        statement.bindLong(5, entity.getId());
+      }
+    };
   }
 
   @Override
@@ -105,6 +132,25 @@ public final class EvidenceDao_Impl implements EvidenceDao {
         __db.beginTransaction();
         try {
           __deletionAdapterOfEvidenceEntity.handle(evidence);
+          __db.setTransactionSuccessful();
+          return Unit.INSTANCE;
+        } finally {
+          __db.endTransaction();
+        }
+      }
+    }, $completion);
+  }
+
+  @Override
+  public Object update(final EvidenceEntity evidence,
+      final Continuation<? super Unit> $completion) {
+    return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
+      @Override
+      @NonNull
+      public Unit call() throws Exception {
+        __db.beginTransaction();
+        try {
+          __updateAdapterOfEvidenceEntity.handle(evidence);
           __db.setTransactionSuccessful();
           return Unit.INSTANCE;
         } finally {

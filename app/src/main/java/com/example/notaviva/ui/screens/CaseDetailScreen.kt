@@ -41,8 +41,9 @@ fun CaseDetailScreen(
     // Nuevo: guarda la entrevista que se esta editando (null = no hay dialogo de edicion abierto).
     // Usamos la entrevista completa (no solo el id) para poder precargar sus campos en el formulario.
     var interviewBeingEdited by remember { mutableStateOf<InterviewEntity?>(null) }
-    // Nuevo: mismo mecanismo que interviewBeingEdited, ahora para Evidencia.
     var evidenceBeingEdited by remember { mutableStateOf<EvidenceEntity?>(null) }
+    // Nuevo: controla el dialogo de aviso cuando se intenta cerrar sin conclusion.
+    var showCloseBlockedDialog by remember { mutableStateOf(false) }
 
     val currentCase = case
     if (currentCase == null) {
@@ -90,7 +91,13 @@ fun CaseDetailScreen(
                         DropdownMenuItem(
                             text = { Text(option.label) },
                             onClick = {
-                                viewModel.updateStatus(currentCase, option)
+                                // Nuevo: antes de aplicar el cambio, se valida con CaseUtils
+                                // si esta transicion esta permitida (cerrar exige conclusion).
+                                if (CaseUtils.canChangeStatusTo(currentCase, option)) {
+                                    viewModel.updateStatus(currentCase, option)
+                                } else {
+                                    showCloseBlockedDialog = true
+                                }
                                 statusMenuExpanded = false
                             }
                         )
@@ -182,6 +189,18 @@ fun CaseDetailScreen(
             onSave = { updated ->
                 viewModel.updateEvidence(updated)
                 evidenceBeingEdited = null
+            }
+        )
+    }
+
+    // Nuevo: aviso cuando se intenta cerrar un caso sin conclusion escrita.
+    if (showCloseBlockedDialog) {
+        AlertDialog(
+            onDismissRequest = { showCloseBlockedDialog = false },
+            title = { Text("No se puede cerrar el caso") },
+            text = { Text("Para marcar este caso como Cerrado primero debes escribir una conclusión en la pestaña Conclusión.") },
+            confirmButton = {
+                TextButton(onClick = { showCloseBlockedDialog = false }) { Text("Entendido") }
             }
         )
     }
