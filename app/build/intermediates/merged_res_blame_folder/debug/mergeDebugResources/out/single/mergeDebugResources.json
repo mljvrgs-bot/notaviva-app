@@ -1,14 +1,34 @@
 [
     {
-        "merged": "com.example.notaviva.app-debug-55:/mipmap-anydpi-v26_ic_launcher.xml.flat",
-        "source": "com.example.notaviva.app-main-57:/mipmap-anydpi-v26/ic_launcher.xml"
+        "merged": "com.example.notaviva.app-debug-62:/mipmap-anydpi-v26_ic_launcher.xml.flat",
+        "source": "com.example.notaviva.app-main-64:/mipmap-anydpi-v26/ic_launcher.xml"
     },
     {
-        "merged": "com.example.notaviva.app-debug-55:/drawable_ic_launcher_foreground.xml.flat",
-        "source": "com.example.notaviva.app-main-57:/drawable/ic_launcher_foreground.xml"
+        "merged": "com.example.notaviva.app-debug-62:/mipmap-anydpi-v26_ic_launcher_round.xml.flat",
+        "source": "com.example.notaviva.app-main-64:/mipmap-anydpi-v26/ic_launcher_round.xml"
     },
     {
-        "merged": "com.example.notaviva.app-debug-55:/mipmap-anydpi-v26_ic_launcher_round.xml.flat",
-        "source": "com.example.notaviva.app-main-57:/mipmap-anydpi-v26/ic_launcher_round.xml"
+        "merged": "com.example.notaviva.app-debug-62:/layout_item_action_tile.xml.flat",
+        "source": "com.example.notaviva.app-main-64:/layout/item_action_tile.xml"
+    },
+    {
+        "merged": "com.example.notaviva.app-debug-62:/drawable_ic_launcher_foreground.xml.flat",
+        "source": "com.example.notaviva.app-main-64:/drawable/ic_launcher_foreground.xml"
+    },
+    {
+        "merged": "com.example.notaviva.app-debug-62:/drawable_bg_card.xml.flat",
+        "source": "com.example.notaviva.app-main-64:/drawable/bg_card.xml"
+    },
+    {
+        "merged": "com.example.notaviva.app-debug-62:/drawable_bg_hero.xml.flat",
+        "source": "com.example.notaviva.app-main-64:/drawable/bg_hero.xml"
+    },
+    {
+        "merged": "com.example.notaviva.app-debug-62:/drawable_bg_avatar.xml.flat",
+        "source": "com.example.notaviva.app-main-64:/drawable/bg_avatar.xml"
+    },
+    {
+        "merged": "com.example.notaviva.app-debug-62:/layout_activity_home.xml.flat",
+        "source": "com.example.notaviva.app-main-64:/layout/activity_home.xml"
     }
 ]

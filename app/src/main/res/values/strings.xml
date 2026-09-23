@@ -1,3 +1,19 @@
 <resources>
     <string name="app_name">NotaViva</string>
+    <string name="tagline">Historias que importan</string>
+    <string name="hero_title">Hola, periodista</string>
+    <string name="hero_subtitle">Organiza tus entrevistas, construye tus historias.</string>
+    <string name="action_new_case_title">Nuevo caso</string>
+    <string name="action_new_case_subtitle">Crea un nuevo tema de investigación</string>
+    <string name="action_new_interview_title">Nueva entrevista</string>
+    <string name="action_new_interview_subtitle">Registra una conversación</string>
+    <string name="action_my_cases_title">Mis casos</string>
+    <string name="action_my_cases_subtitle">Revisa y gestiona tus investigaciones</string>
+    <string name="action_stats_title">Estadísticas</string>
+    <string name="action_stats_subtitle">Entrevistas, casos y avances</string>
+    <string name="quote">"El periodismo es el primer borrador de la historia."</string>
+    <string name="quote_author">— Philip Graham</string>
+    <string name="nav_home">Inicio</string>
+    <string name="nav_cases">Casos</string>
+    <string name="nav_settings">Configuración</string>
 </resources>

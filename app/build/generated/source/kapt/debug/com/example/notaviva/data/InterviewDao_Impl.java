@@ -114,7 +114,8 @@ public final class InterviewDao_Impl implements InterviewDao {
   }
 
   @Override
-  public Object insert(final InterviewEntity interview, final Continuation<? super Long> arg1) {
+  public Object insert(final InterviewEntity interview,
+      final Continuation<? super Long> $completion) {
     return CoroutinesRoom.execute(__db, true, new Callable<Long>() {
       @Override
       @NonNull
@@ -128,11 +129,12 @@ public final class InterviewDao_Impl implements InterviewDao {
           __db.endTransaction();
         }
       }
-    }, arg1);
+    }, $completion);
   }
 
   @Override
-  public Object delete(final InterviewEntity interview, final Continuation<? super Unit> arg1) {
+  public Object delete(final InterviewEntity interview,
+      final Continuation<? super Unit> $completion) {
     return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
       @Override
       @NonNull
@@ -146,11 +148,12 @@ public final class InterviewDao_Impl implements InterviewDao {
           __db.endTransaction();
         }
       }
-    }, arg1);
+    }, $completion);
   }
 
   @Override
-  public Object update(final InterviewEntity interview, final Continuation<? super Unit> arg1) {
+  public Object update(final InterviewEntity interview,
+      final Continuation<? super Unit> $completion) {
     return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
       @Override
       @NonNull
@@ -164,7 +167,7 @@ public final class InterviewDao_Impl implements InterviewDao {
           __db.endTransaction();
         }
       }
-    }, arg1);
+    }, $completion);
   }
 
   @Override

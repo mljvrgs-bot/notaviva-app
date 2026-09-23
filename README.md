@@ -3,7 +3,7 @@
 Aplicación móvil para que un periodista administre casos de investigación,
 sus entrevistas, evidencias y conclusiones.
 
-Desarrollada en **Kotlin** con **Jetpack Compose** (UI declarativa) y **Room**
+Desarrollada en Kotlin con etpack Compose (UI declarativa) y Room
 (persistencia local sobre SQLite). No usa backend, servicios web ni Firebase.
 
 ## Arquitectura

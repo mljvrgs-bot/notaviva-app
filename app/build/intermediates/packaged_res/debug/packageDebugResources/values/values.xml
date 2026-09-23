@@ -1,6 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <color name="accent_blue">#2E6BE6</color>
+    <color name="background_light">#F5F6FA</color>
+    <color name="card_white">#FFFFFF</color>
     <color name="ic_launcher_background">#1B2A4A</color>
+    <color name="navy_dark">#10192E</color>
+    <color name="navy_primary">#1B2A4A</color>
+    <color name="scrim">#66000000</color>
+    <color name="text_dark">#1B1B1F</color>
+    <color name="text_gray">#7A7F8A</color>
+    <string name="action_my_cases_subtitle">Revisa y gestiona tus investigaciones</string>
+    <string name="action_my_cases_title">Mis casos</string>
+    <string name="action_new_case_subtitle">Crea un nuevo tema de investigación</string>
+    <string name="action_new_case_title">Nuevo caso</string>
+    <string name="action_new_interview_subtitle">Registra una conversación</string>
+    <string name="action_new_interview_title">Nueva entrevista</string>
+    <string name="action_stats_subtitle">Entrevistas, casos y avances</string>
+    <string name="action_stats_title">Estadísticas</string>
     <string name="app_name">NotaViva</string>
+    <string name="hero_subtitle">Organiza tus entrevistas, construye tus historias.</string>
+    <string name="hero_title">Hola, periodista</string>
+    <string name="nav_cases">Casos</string>
+    <string name="nav_home">Inicio</string>
+    <string name="nav_settings">Configuración</string>
+    <string name="quote">"El periodismo es el primer borrador de la historia."</string>
+    <string name="quote_author">— Philip Graham</string>
+    <string name="tagline">Historias que importan</string>
     <style name="Theme.NotaViva" parent="android:Theme.Material.Light.NoActionBar"/>
 </resources>
