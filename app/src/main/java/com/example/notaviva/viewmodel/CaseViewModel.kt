@@ -65,6 +65,10 @@ class CaseViewModel(private val repository: CaseRepository) : ViewModel() {
         }
     }
 
+    fun updateInterview(interview: InterviewEntity) {
+        viewModelScope.launch { repository.updateInterview(interview) }
+    }
+
     fun deleteInterview(interview: InterviewEntity) {
         viewModelScope.launch { repository.deleteInterview(interview) }
     }
@@ -77,6 +81,11 @@ class CaseViewModel(private val repository: CaseRepository) : ViewModel() {
         viewModelScope.launch {
             repository.addEvidence(EvidenceEntity(caseId = caseId, name = name, description = description))
         }
+    }
+
+    // Nuevo: mismo patron que updateInterview, aplicado a Evidencia.
+    fun updateEvidence(evidence: EvidenceEntity) {
+        viewModelScope.launch { repository.updateEvidence(evidence) }
     }
 
     fun deleteEvidence(evidence: EvidenceEntity) {

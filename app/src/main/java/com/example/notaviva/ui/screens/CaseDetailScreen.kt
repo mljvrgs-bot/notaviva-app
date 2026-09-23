@@ -28,15 +28,25 @@ fun CaseDetailScreen(
     onEdit: (Long) -> Unit,
     onDeleted: () -> Unit
 ) {
-    val case by viewModel.getCaseFlow(caseId).collectAsState()
-    val interviews by viewModel.getInterviews(caseId).collectAsState()
-    val evidences by viewModel.getEvidences(caseId).collectAsState()
+    // Se envuelve en remember(caseId) para que el StateFlow se cree una sola vez
+    // por caso, y no en cada recomposicion (evita el parpadeo/loop infinito
+    // que causaba llamar a viewModel.getXxxFlow(caseId) directo en el cuerpo).
+    val case by remember(caseId) { viewModel.getCaseFlow(caseId) }.collectAsState()
+    val interviews by remember(caseId) { viewModel.getInterviews(caseId) }.collectAsState()
+    val evidences by remember(caseId) { viewModel.getEvidences(caseId) }.collectAsState()
 
     var tab by remember { mutableStateOf(0) }
     var showDeleteCase by remember { mutableStateOf(false) }
     var showAddInterview by remember { mutableStateOf(false) }
     var showAddEvidence by remember { mutableStateOf(false) }
     var statusMenuExpanded by remember { mutableStateOf(false) }
+
+    // Nuevo: guarda la entrevista que se esta editando (null = no hay dialogo de edicion abierto).
+    // Usamos la entrevista completa (no solo el id) para poder precargar sus campos en el formulario.
+    var interviewBeingEdited by remember { mutableStateOf<InterviewEntity?>(null) }
+    var evidenceBeingEdited by remember { mutableStateOf<EvidenceEntity?>(null) }
+    // Nuevo: controla el dialogo de aviso cuando se intenta cerrar sin conclusion.
+    var showCloseBlockedDialog by remember { mutableStateOf(false) }
 
     val currentCase = case
     if (currentCase == null) {
@@ -45,6 +55,11 @@ fun CaseDetailScreen(
         }
         return
     }
+
+    // Regla de negocio: un caso cerrado no debe permitir editar sus entrevistas.
+    // Es una decision de diseno (el enunciado no lo detalla explicitamente),
+    // consistente con que el cierre representa el fin de la investigacion.
+    val caseIsClosed = !CaseUtils.canModifyCaseContent(CaseStatus.fromName(currentCase.status))
 
     Scaffold(
         topBar = {
@@ -79,7 +94,13 @@ fun CaseDetailScreen(
                         DropdownMenuItem(
                             text = { Text(option.label) },
                             onClick = {
-                                viewModel.updateStatus(currentCase, option)
+                                // Nuevo: antes de aplicar el cambio, se valida con CaseUtils
+                                // si esta transicion esta permitida (cerrar exige conclusion).
+                                if (CaseUtils.canChangeStatusTo(currentCase, option)) {
+                                    viewModel.updateStatus(currentCase, option)
+                                } else {
+                                    showCloseBlockedDialog = true
+                                }
                                 statusMenuExpanded = false
                             }
                         )
@@ -98,16 +119,21 @@ fun CaseDetailScreen(
                 0 -> ResumenTab(currentCase.description)
                 1 -> EntrevistasTab(
                     interviews = interviews,
+                    readOnly = caseIsClosed,
                     onAdd = { showAddInterview = true },
+                    onEdit = { interviewBeingEdited = it },
                     onDelete = { viewModel.deleteInterview(it) }
                 )
                 2 -> ConclusionTab(
                     initialText = currentCase.conclusion,
+                    readOnly = caseIsClosed,
                     onSave = { viewModel.updateConclusion(currentCase, it) }
                 )
                 3 -> EvidenciasTab(
                     evidences = evidences,
+                    readOnly = caseIsClosed,
                     onAdd = { showAddEvidence = true },
+                    onEdit = { evidenceBeingEdited = it },
                     onDelete = { viewModel.deleteEvidence(it) }
                 )
             }
@@ -137,12 +163,48 @@ fun CaseDetailScreen(
         )
     }
 
+    // Nuevo: dialogo de edicion. Solo se muestra si interviewBeingEdited no es null.
+    interviewBeingEdited?.let { interview ->
+        EditInterviewDialog(
+            interview = interview,
+            onDismiss = { interviewBeingEdited = null },
+            onSave = { updated ->
+                viewModel.updateInterview(updated)
+                interviewBeingEdited = null
+            }
+        )
+    }
+
     if (showAddEvidence) {
         AddEvidenceDialog(
             onDismiss = { showAddEvidence = false },
             onSave = { name, desc ->
                 viewModel.addEvidence(caseId, name, desc)
                 showAddEvidence = false
+            }
+        )
+    }
+
+    // Nuevo: dialogo de edicion de evidencia, mismo patron que interviewBeingEdited.
+    evidenceBeingEdited?.let { evidence ->
+        EditEvidenceDialog(
+            evidence = evidence,
+            onDismiss = { evidenceBeingEdited = null },
+            onSave = { updated ->
+                viewModel.updateEvidence(updated)
+                evidenceBeingEdited = null
+            }
+        )
+    }
+
+    // Nuevo: aviso cuando se intenta cerrar un caso sin conclusion escrita.
+    if (showCloseBlockedDialog) {
+        AlertDialog(
+            onDismissRequest = { showCloseBlockedDialog = false },
+            title = { Text("No se puede cerrar el caso") },
+            text = { Text("Para marcar este caso como Cerrado primero debes escribir una conclusión en la pestaña Conclusión.") },
+            confirmButton = {
+                TextButton(onClick = { showCloseBlockedDialog = false }) { Text("Entendido") }
             }
         )
     }
@@ -160,7 +222,9 @@ private fun ResumenTab(description: String) {
 @Composable
 private fun EntrevistasTab(
     interviews: List<InterviewEntity>,
+    readOnly: Boolean,
     onAdd: () -> Unit,
+    onEdit: (InterviewEntity) -> Unit,
     onDelete: (InterviewEntity) -> Unit
 ) {
     Column(Modifier.padding(16.dp).fillMaxSize()) {
@@ -170,11 +234,22 @@ private fun EntrevistasTab(
             verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
         ) {
             Text("Entrevistas (${interviews.size})", fontWeight = FontWeight.Bold)
-            TextButton(onClick = onAdd) {
-                Icon(Icons.Default.Add, contentDescription = null)
-                Spacer(Modifier.width(4.dp))
-                Text("Nueva entrevista")
+            // Si el caso esta cerrado no se permite agregar nuevas entrevistas.
+            if (!readOnly) {
+                TextButton(onClick = onAdd) {
+                    Icon(Icons.Default.Add, contentDescription = null)
+                    Spacer(Modifier.width(4.dp))
+                    Text("Nueva entrevista")
+                }
             }
+        }
+        if (readOnly) {
+            Spacer(Modifier.height(4.dp))
+            Text(
+                "Este caso está cerrado: las entrevistas no se pueden modificar.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error
+            )
         }
         Spacer(Modifier.height(8.dp))
         if (interviews.isEmpty()) {
@@ -190,8 +265,14 @@ private fun EntrevistasTab(
                                 Spacer(Modifier.height(4.dp))
                                 Text("Hallazgos: ${interview.findings}")
                             }
-                            IconButton(onClick = { onDelete(interview) }) {
-                                Icon(Icons.Default.Delete, contentDescription = "Eliminar")
+                            // Los botones de editar/eliminar solo aparecen si el caso no esta cerrado.
+                            if (!readOnly) {
+                                IconButton(onClick = { onEdit(interview) }) {
+                                    Icon(Icons.Default.Edit, contentDescription = "Editar")
+                                }
+                                IconButton(onClick = { onDelete(interview) }) {
+                                    Icon(Icons.Default.Delete, contentDescription = "Eliminar")
+                                }
                             }
                         }
                     }
@@ -202,20 +283,57 @@ private fun EntrevistasTab(
 }
 
 @Composable
-private fun ConclusionTab(initialText: String, onSave: (String) -> Unit) {
+private fun ConclusionTab(initialText: String, readOnly: Boolean, onSave: (String) -> Unit) {
+    // Modo edicion: activo si aun no hay conclusion guardada, o si el usuario
+    // pulsa "Editar". remember(initialText) tambien lo recalcula automaticamente
+    // cuando la conclusion ya guardada llega desde la base de datos (por ejemplo,
+    // justo despues de guardar), asegurando que se pase a modo solo-lectura.
+    var isEditing by remember(initialText) { mutableStateOf(initialText.isBlank()) }
     var text by remember(initialText) { mutableStateOf(initialText) }
+
     Column(Modifier.padding(16.dp).fillMaxSize()) {
         Text("Conclusión del caso", fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(8.dp))
-        OutlinedTextField(
-            value = text,
-            onValueChange = { text = it },
-            modifier = Modifier.fillMaxWidth().weight(1f, fill = false).height(160.dp),
-            placeholder = { Text("Escribe las conclusiones de la investigación...") }
-        )
-        Spacer(Modifier.height(12.dp))
-        Button(onClick = { onSave(text) }) {
-            Text("Guardar conclusión")
+
+        if (isEditing && !readOnly) {
+            OutlinedTextField(
+                value = text,
+                onValueChange = { text = it },
+                modifier = Modifier.fillMaxWidth().weight(1f, fill = false).height(160.dp),
+                placeholder = { Text("Escribe las conclusiones de la investigación...") }
+            )
+            Spacer(Modifier.height(12.dp))
+            Button(onClick = {
+                onSave(text)
+                // Cambio inmediato a modo lectura; remember(initialText) lo
+                // confirmara de nuevo cuando llegue el valor actualizado.
+                isEditing = false
+            }) {
+                Text("Guardar conclusión")
+            }
+        } else {
+            Text(
+                if (initialText.isBlank()) "Aún no se ha registrado una conclusión para este caso."
+                else initialText
+            )
+            if (!readOnly) {
+                Spacer(Modifier.height(12.dp))
+                TextButton(onClick = {
+                    text = initialText
+                    isEditing = true
+                }) {
+                    Icon(Icons.Default.Edit, contentDescription = null)
+                    Spacer(Modifier.width(4.dp))
+                    Text("Editar conclusión")
+                }
+            } else if (initialText.isBlank()) {
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    "Este caso está cerrado y no tiene conclusión registrada.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
         }
     }
 }
@@ -223,7 +341,9 @@ private fun ConclusionTab(initialText: String, onSave: (String) -> Unit) {
 @Composable
 private fun EvidenciasTab(
     evidences: List<EvidenceEntity>,
+    readOnly: Boolean,
     onAdd: () -> Unit,
+    onEdit: (EvidenceEntity) -> Unit,
     onDelete: (EvidenceEntity) -> Unit
 ) {
     Column(Modifier.padding(16.dp).fillMaxSize()) {
@@ -233,11 +353,22 @@ private fun EvidenciasTab(
             verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
         ) {
             Text("Evidencias (${evidences.size})", fontWeight = FontWeight.Bold)
-            TextButton(onClick = onAdd) {
-                Icon(Icons.Default.Add, contentDescription = null)
-                Spacer(Modifier.width(4.dp))
-                Text("Agregar")
+            // Si el caso esta cerrado no se permite agregar nuevas evidencias.
+            if (!readOnly) {
+                TextButton(onClick = onAdd) {
+                    Icon(Icons.Default.Add, contentDescription = null)
+                    Spacer(Modifier.width(4.dp))
+                    Text("Agregar")
+                }
             }
+        }
+        if (readOnly) {
+            Spacer(Modifier.height(4.dp))
+            Text(
+                "Este caso está cerrado: las evidencias no se pueden modificar.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error
+            )
         }
         Spacer(Modifier.height(8.dp))
         if (evidences.isEmpty()) {
@@ -251,8 +382,14 @@ private fun EvidenciasTab(
                                 Text(evidence.name, fontWeight = FontWeight.Bold)
                                 Text(evidence.description, style = MaterialTheme.typography.bodyMedium)
                             }
-                            IconButton(onClick = { onDelete(evidence) }) {
-                                Icon(Icons.Default.Delete, contentDescription = "Eliminar")
+                            // Los botones de editar/eliminar solo aparecen si el caso no esta cerrado.
+                            if (!readOnly) {
+                                IconButton(onClick = { onEdit(evidence) }) {
+                                    Icon(Icons.Default.Edit, contentDescription = "Editar")
+                                }
+                                IconButton(onClick = { onDelete(evidence) }) {
+                                    Icon(Icons.Default.Delete, contentDescription = "Eliminar")
+                                }
                             }
                         }
                     }
@@ -294,6 +431,50 @@ private fun AddInterviewDialog(
     )
 }
 
+// Nuevo: dialogo de edicion de entrevista.
+// Recibe la entrevista original para precargar los campos, y devuelve
+// (via onSave) una copia actualizada con los nuevos valores.
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun EditInterviewDialog(
+    interview: InterviewEntity,
+    onDismiss: () -> Unit,
+    onSave: (InterviewEntity) -> Unit
+) {
+    // remember(interview.id) asegura que si se abre el dialogo para otra entrevista
+    // distinta, los campos se reinicien con los valores de la nueva entrevista.
+    var name by remember(interview.id) { mutableStateOf(interview.personName) }
+    var date by remember(interview.id) { mutableStateOf(interview.date) }
+    var findings by remember(interview.id) { mutableStateOf(interview.findings) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Editar entrevista") },
+        text = {
+            Column {
+                OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Nombre del entrevistado") }, singleLine = true)
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(value = date, onValueChange = { date = it }, label = { Text("Fecha") }, singleLine = true)
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(value = findings, onValueChange = { findings = it }, label = { Text("Hallazgos principales") })
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    if (name.isNotBlank()) {
+                        // .copy() crea una nueva instancia de la data class InterviewEntity,
+                        // conservando id y caseId, pero con los campos editados.
+                        onSave(interview.copy(personName = name, date = date, findings = findings))
+                    }
+                },
+                enabled = name.isNotBlank()
+            ) { Text("Guardar") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } }
+    )
+}
+
 @Composable
 private fun AddEvidenceDialog(
     onDismiss: () -> Unit,
@@ -315,6 +496,43 @@ private fun AddEvidenceDialog(
         confirmButton = {
             TextButton(
                 onClick = { if (name.isNotBlank()) onSave(name, description) },
+                enabled = name.isNotBlank()
+            ) { Text("Guardar") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } }
+    )
+}
+
+// Nuevo: dialogo de edicion de evidencia. Mismo patron que EditInterviewDialog:
+// precarga los campos con remember(evidence.id) y usa .copy() para conservar
+// id y caseId al guardar los cambios.
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun EditEvidenceDialog(
+    evidence: EvidenceEntity,
+    onDismiss: () -> Unit,
+    onSave: (EvidenceEntity) -> Unit
+) {
+    var name by remember(evidence.id) { mutableStateOf(evidence.name) }
+    var description by remember(evidence.id) { mutableStateOf(evidence.description) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Editar evidencia") },
+        text = {
+            Column {
+                OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Nombre / referencia") }, singleLine = true)
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(value = description, onValueChange = { description = it }, label = { Text("Descripción") })
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    if (name.isNotBlank()) {
+                        onSave(evidence.copy(name = name, description = description))
+                    }
+                },
                 enabled = name.isNotBlank()
             ) { Text("Guardar") }
         },

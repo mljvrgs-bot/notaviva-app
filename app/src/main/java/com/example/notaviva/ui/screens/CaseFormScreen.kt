@@ -27,7 +27,16 @@ fun CaseFormScreen(
     onSaved: (Long) -> Unit
 ) {
     val nullFlowState = remember { mutableStateOf<com.example.notaviva.data.CaseEntity?>(null) }
-    val existingCase by if (caseId != null) viewModel.getCaseFlow(caseId).collectAsState() else nullFlowState
+    // Fix: se envuelve en remember(caseId) para que el StateFlow se cree una
+    // sola vez por caso. Sin esto, cada recomposicion generaba un StateFlow
+    // nuevo que reiniciaba existingCase a null momentaneamente, y si el
+    // usuario guardaba justo en ese instante, el codigo caia en la rama de
+    // "crear caso" en vez de "actualizar", duplicando el caso.
+    val existingCase by if (caseId != null) {
+        remember(caseId) { viewModel.getCaseFlow(caseId) }.collectAsState()
+    } else {
+        nullFlowState
+    }
 
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
@@ -36,6 +45,10 @@ fun CaseFormScreen(
     var statusMenuExpanded by remember { mutableStateOf(false) }
     var initialized by remember { mutableStateOf(false) }
     var showError by remember { mutableStateOf(false) }
+    // Nuevo: aviso cuando se intenta marcar el caso como Cerrado sin conclusion.
+    // Al crear un caso siempre estara bloqueado, porque este formulario no
+    // maneja la conclusion (esa se escribe desde el detalle del caso).
+    var showCloseBlockedDialog by remember { mutableStateOf(false) }
 
     // Cuando llega el caso existente (modo edición), precargamos los campos una sola vez.
     LaunchedEffect(existingCase) {
@@ -48,6 +61,10 @@ fun CaseFormScreen(
             initialized = true
         }
     }
+
+    // Nuevo: un caso cerrado no se puede editar. Solo aplica en modo edicion
+    // (caseId != null); un caso nuevo nunca esta cerrado.
+    val caseIsClosed = existingCase?.let { !CaseUtils.canModifyCaseContent(CaseStatus.fromName(it.status)) } ?: false
 
     Scaffold(
         topBar = {
@@ -66,12 +83,22 @@ fun CaseFormScreen(
                 .padding(padding)
                 .padding(20.dp)
         ) {
+            if (caseIsClosed) {
+                Text(
+                    "Este caso está cerrado: no se puede editar.",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Spacer(Modifier.height(12.dp))
+            }
+
             OutlinedTextField(
                 value = title,
                 onValueChange = { title = it },
                 label = { Text("Título") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
+                enabled = !caseIsClosed,
                 isError = showError && title.isBlank()
             )
             Spacer(Modifier.height(12.dp))
@@ -81,6 +108,7 @@ fun CaseFormScreen(
                 onValueChange = { description = it },
                 label = { Text("Descripción") },
                 modifier = Modifier.fillMaxWidth().height(120.dp),
+                enabled = !caseIsClosed,
                 isError = showError && description.isBlank()
             )
             Spacer(Modifier.height(12.dp))
@@ -91,31 +119,39 @@ fun CaseFormScreen(
                 label = { Text("Fecha (dd/MM/yyyy)") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
+                enabled = !caseIsClosed,
                 isError = showError && date.isBlank()
             )
             Spacer(Modifier.height(12.dp))
 
             ExposedDropdownMenuBox(
-                expanded = statusMenuExpanded,
-                onExpandedChange = { statusMenuExpanded = !statusMenuExpanded }
+                expanded = statusMenuExpanded && !caseIsClosed,
+                onExpandedChange = { if (!caseIsClosed) statusMenuExpanded = !statusMenuExpanded }
             ) {
                 OutlinedTextField(
                     value = status.label,
                     onValueChange = {},
                     readOnly = true,
+                    enabled = !caseIsClosed,
                     label = { Text("Estado") },
                     modifier = Modifier.menuAnchor().fillMaxWidth(),
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = statusMenuExpanded) }
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = statusMenuExpanded && !caseIsClosed) }
                 )
                 ExposedDropdownMenu(
-                    expanded = statusMenuExpanded,
+                    expanded = statusMenuExpanded && !caseIsClosed,
                     onDismissRequest = { statusMenuExpanded = false }
                 ) {
                     CaseStatus.values().forEach { option ->
                         DropdownMenuItem(
                             text = { Text(option.label) },
                             onClick = {
-                                status = option
+                                // Nuevo: no se permite seleccionar Cerrado si el caso
+                                // (nuevo o existente) todavia no tiene conclusion.
+                                if (CaseUtils.canChangeStatusTo(existingCase?.conclusion ?: "", option)) {
+                                    status = option
+                                } else {
+                                    showCloseBlockedDialog = true
+                                }
                                 statusMenuExpanded = false
                             }
                         )
@@ -134,34 +170,55 @@ fun CaseFormScreen(
 
             Spacer(Modifier.height(24.dp))
 
-            Button(
-                onClick = {
-                    if (!CaseUtils.isValidCase(title, description, date)) {
-                        showError = true
-                        return@Button
-                    }
-                    val current = existingCase
-                    if (caseId != null && current != null) {
-                        viewModel.updateCase(
-                            current.copy(
-                                title = title,
-                                description = description,
-                                date = date,
-                                status = status.name
-                            )
-                        )
-                        onSaved(caseId)
-                    } else {
-                        viewModel.createCase(title, description, date, status) { newId ->
-                            onSaved(newId)
+            if (!caseIsClosed) {
+                Button(
+                    onClick = {
+                        if (!CaseUtils.isValidCase(title, description, date)) {
+                            showError = true
+                            return@Button
                         }
-                    }
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(if (caseId == null) "Crear caso" else "Guardar cambios")
+                        val current = existingCase
+                        if (caseId != null && current != null) {
+                            viewModel.updateCase(
+                                current.copy(
+                                    title = title,
+                                    description = description,
+                                    date = date,
+                                    status = status.name
+                                )
+                            )
+                            onSaved(caseId)
+                        } else {
+                            viewModel.createCase(title, description, date, status) { newId ->
+                                onSaved(newId)
+                            }
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(if (caseId == null) "Crear caso" else "Guardar cambios")
+                }
             }
         }
+    }
+
+    // Nuevo: aviso cuando se intenta marcar el caso como Cerrado sin conclusion.
+    if (showCloseBlockedDialog) {
+        AlertDialog(
+            onDismissRequest = { showCloseBlockedDialog = false },
+            title = { Text("No se puede cerrar el caso") },
+            text = {
+                Text(
+                    if (caseId == null)
+                        "Un caso nuevo no puede crearse como Cerrado: primero créalo y escribe una conclusión desde su detalle."
+                    else
+                        "Para marcar este caso como Cerrado primero debes escribir una conclusión en la pestaña Conclusión, dentro del detalle del caso."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { showCloseBlockedDialog = false }) { Text("Entendido") }
+            }
+        )
     }
 }
 

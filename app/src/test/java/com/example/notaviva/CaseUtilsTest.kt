@@ -74,4 +74,80 @@ class CaseUtilsTest {
         assertEquals(CaseStatus.EN_INVESTIGACION, CaseStatus.fromName("VALOR_INVALIDO"))
         assertEquals(CaseStatus.PUBLICADO, CaseStatus.fromName("PUBLICADO"))
     }
+
+    // ---- Entrevistas: validaciones ----
+
+    @Test
+    fun `isValidInterview requires person name date and findings`() {
+        assertTrue(CaseUtils.isValidInterview("Juan Pérez", "10/03/2025", "Confirmó el hallazgo"))
+        assertFalse(CaseUtils.isValidInterview("", "10/03/2025", "Confirmó el hallazgo"))
+        assertFalse(CaseUtils.isValidInterview("Juan Pérez", "", "Confirmó el hallazgo"))
+        assertFalse(CaseUtils.isValidInterview("Juan Pérez", "10/03/2025", ""))
+    }
+
+    @Test
+    fun `isValidInterview rejects blank-only values`() {
+        // Cadenas de solo espacios deben tratarse como vacias, no como datos validos.
+        assertFalse(CaseUtils.isValidInterview("   ", "10/03/2025", "hallazgo"))
+    }
+
+    // ---- Estados: restriccion de caso cerrado ----
+
+    @Test
+    fun `canModifyCaseContent is true while case is not closed`() {
+        assertTrue(CaseUtils.canModifyCaseContent(CaseStatus.EN_INVESTIGACION))
+        assertTrue(CaseUtils.canModifyCaseContent(CaseStatus.PUBLICADO))
+    }
+
+    @Test
+    fun `canModifyCaseContent is false once case is closed`() {
+        assertFalse(CaseUtils.canModifyCaseContent(CaseStatus.CERRADO))
+    }
+
+    // ---- Cierre del caso: transicion de estado ----
+
+    @Test
+    fun `canChangeStatusTo blocks closing without a conclusion`() {
+        val caseWithoutConclusion = sampleCases[0]
+        assertFalse(CaseUtils.canChangeStatusTo(caseWithoutConclusion, CaseStatus.CERRADO))
+    }
+
+    @Test
+    fun `canChangeStatusTo allows closing once conclusion is written`() {
+        val caseWithConclusion = sampleCases[0].copy(conclusion = "Se confirmó la irregularidad.")
+        assertTrue(CaseUtils.canChangeStatusTo(caseWithConclusion, CaseStatus.CERRADO))
+    }
+
+    @Test
+    fun `canChangeStatusTo allows any transition that is not closing`() {
+        val caseWithoutConclusion = sampleCases[0]
+        assertTrue(CaseUtils.canChangeStatusTo(caseWithoutConclusion, CaseStatus.EN_INVESTIGACION))
+        assertTrue(CaseUtils.canChangeStatusTo(caseWithoutConclusion, CaseStatus.PUBLICADO))
+    }
+
+    // ---- Sobrecarga de canChangeStatusTo basada en texto (usada al crear un caso) ----
+
+    @Test
+    fun `canChangeStatusTo with blank conclusion text blocks closing`() {
+        assertFalse(CaseUtils.canChangeStatusTo("", CaseStatus.CERRADO))
+    }
+
+    @Test
+    fun `canChangeStatusTo with conclusion text allows closing`() {
+        assertTrue(CaseUtils.canChangeStatusTo("Se confirmó la irregularidad.", CaseStatus.CERRADO))
+    }
+
+    // ---- Evidencias: validaciones ----
+
+    @Test
+    fun `isValidEvidence requires name and description`() {
+        assertTrue(CaseUtils.isValidEvidence("Factura #123", "Contrato con sobrecosto"))
+        assertFalse(CaseUtils.isValidEvidence("", "Contrato con sobrecosto"))
+        assertFalse(CaseUtils.isValidEvidence("Factura #123", ""))
+    }
+
+    @Test
+    fun `isValidEvidence rejects blank-only values`() {
+        assertFalse(CaseUtils.isValidEvidence("   ", "descripcion"))
+    }
 }

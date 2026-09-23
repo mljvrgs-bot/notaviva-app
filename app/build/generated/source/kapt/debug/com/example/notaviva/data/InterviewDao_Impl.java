@@ -35,6 +35,8 @@ public final class InterviewDao_Impl implements InterviewDao {
 
   private final EntityDeletionOrUpdateAdapter<InterviewEntity> __deletionAdapterOfInterviewEntity;
 
+  private final EntityDeletionOrUpdateAdapter<InterviewEntity> __updateAdapterOfInterviewEntity;
+
   public InterviewDao_Impl(@NonNull final RoomDatabase __db) {
     this.__db = __db;
     this.__insertionAdapterOfInterviewEntity = new EntityInsertionAdapter<InterviewEntity>(__db) {
@@ -79,11 +81,40 @@ public final class InterviewDao_Impl implements InterviewDao {
         statement.bindLong(1, entity.getId());
       }
     };
+    this.__updateAdapterOfInterviewEntity = new EntityDeletionOrUpdateAdapter<InterviewEntity>(__db) {
+      @Override
+      @NonNull
+      protected String createQuery() {
+        return "UPDATE OR ABORT `interviews` SET `id` = ?,`caseId` = ?,`personName` = ?,`date` = ?,`findings` = ? WHERE `id` = ?";
+      }
+
+      @Override
+      protected void bind(@NonNull final SupportSQLiteStatement statement,
+          @NonNull final InterviewEntity entity) {
+        statement.bindLong(1, entity.getId());
+        statement.bindLong(2, entity.getCaseId());
+        if (entity.getPersonName() == null) {
+          statement.bindNull(3);
+        } else {
+          statement.bindString(3, entity.getPersonName());
+        }
+        if (entity.getDate() == null) {
+          statement.bindNull(4);
+        } else {
+          statement.bindString(4, entity.getDate());
+        }
+        if (entity.getFindings() == null) {
+          statement.bindNull(5);
+        } else {
+          statement.bindString(5, entity.getFindings());
+        }
+        statement.bindLong(6, entity.getId());
+      }
+    };
   }
 
   @Override
-  public Object insert(final InterviewEntity interview,
-      final Continuation<? super Long> $completion) {
+  public Object insert(final InterviewEntity interview, final Continuation<? super Long> arg1) {
     return CoroutinesRoom.execute(__db, true, new Callable<Long>() {
       @Override
       @NonNull
@@ -97,12 +128,11 @@ public final class InterviewDao_Impl implements InterviewDao {
           __db.endTransaction();
         }
       }
-    }, $completion);
+    }, arg1);
   }
 
   @Override
-  public Object delete(final InterviewEntity interview,
-      final Continuation<? super Unit> $completion) {
+  public Object delete(final InterviewEntity interview, final Continuation<? super Unit> arg1) {
     return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
       @Override
       @NonNull
@@ -116,7 +146,25 @@ public final class InterviewDao_Impl implements InterviewDao {
           __db.endTransaction();
         }
       }
-    }, $completion);
+    }, arg1);
+  }
+
+  @Override
+  public Object update(final InterviewEntity interview, final Continuation<? super Unit> arg1) {
+    return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
+      @Override
+      @NonNull
+      public Unit call() throws Exception {
+        __db.beginTransaction();
+        try {
+          __updateAdapterOfInterviewEntity.handle(interview);
+          __db.setTransactionSuccessful();
+          return Unit.INSTANCE;
+        } finally {
+          __db.endTransaction();
+        }
+      }
+    }, arg1);
   }
 
   @Override
