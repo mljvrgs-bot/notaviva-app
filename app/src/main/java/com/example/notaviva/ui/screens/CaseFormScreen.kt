@@ -27,7 +27,16 @@ fun CaseFormScreen(
     onSaved: (Long) -> Unit
 ) {
     val nullFlowState = remember { mutableStateOf<com.example.notaviva.data.CaseEntity?>(null) }
-    val existingCase by if (caseId != null) viewModel.getCaseFlow(caseId).collectAsState() else nullFlowState
+    // Fix: se envuelve en remember(caseId) para que el StateFlow se cree una
+    // sola vez por caso. Sin esto, cada recomposicion generaba un StateFlow
+    // nuevo que reiniciaba existingCase a null momentaneamente, y si el
+    // usuario guardaba justo en ese instante, el codigo caia en la rama de
+    // "crear caso" en vez de "actualizar", duplicando el caso.
+    val existingCase by if (caseId != null) {
+        remember(caseId) { viewModel.getCaseFlow(caseId) }.collectAsState()
+    } else {
+        nullFlowState
+    }
 
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
@@ -49,6 +58,10 @@ fun CaseFormScreen(
         }
     }
 
+    // Nuevo: un caso cerrado no se puede editar. Solo aplica en modo edicion
+    // (caseId != null); un caso nuevo nunca esta cerrado.
+    val caseIsClosed = existingCase?.let { !CaseUtils.canModifyCaseContent(CaseStatus.fromName(it.status)) } ?: false
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -66,12 +79,22 @@ fun CaseFormScreen(
                 .padding(padding)
                 .padding(20.dp)
         ) {
+            if (caseIsClosed) {
+                Text(
+                    "Este caso está cerrado: no se puede editar.",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Spacer(Modifier.height(12.dp))
+            }
+
             OutlinedTextField(
                 value = title,
                 onValueChange = { title = it },
                 label = { Text("Título") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
+                enabled = !caseIsClosed,
                 isError = showError && title.isBlank()
             )
             Spacer(Modifier.height(12.dp))
@@ -81,6 +104,7 @@ fun CaseFormScreen(
                 onValueChange = { description = it },
                 label = { Text("Descripción") },
                 modifier = Modifier.fillMaxWidth().height(120.dp),
+                enabled = !caseIsClosed,
                 isError = showError && description.isBlank()
             )
             Spacer(Modifier.height(12.dp))
@@ -91,24 +115,26 @@ fun CaseFormScreen(
                 label = { Text("Fecha (dd/MM/yyyy)") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
+                enabled = !caseIsClosed,
                 isError = showError && date.isBlank()
             )
             Spacer(Modifier.height(12.dp))
 
             ExposedDropdownMenuBox(
-                expanded = statusMenuExpanded,
-                onExpandedChange = { statusMenuExpanded = !statusMenuExpanded }
+                expanded = statusMenuExpanded && !caseIsClosed,
+                onExpandedChange = { if (!caseIsClosed) statusMenuExpanded = !statusMenuExpanded }
             ) {
                 OutlinedTextField(
                     value = status.label,
                     onValueChange = {},
                     readOnly = true,
+                    enabled = !caseIsClosed,
                     label = { Text("Estado") },
                     modifier = Modifier.menuAnchor().fillMaxWidth(),
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = statusMenuExpanded) }
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = statusMenuExpanded && !caseIsClosed) }
                 )
                 ExposedDropdownMenu(
-                    expanded = statusMenuExpanded,
+                    expanded = statusMenuExpanded && !caseIsClosed,
                     onDismissRequest = { statusMenuExpanded = false }
                 ) {
                     CaseStatus.values().forEach { option ->
@@ -134,32 +160,34 @@ fun CaseFormScreen(
 
             Spacer(Modifier.height(24.dp))
 
-            Button(
-                onClick = {
-                    if (!CaseUtils.isValidCase(title, description, date)) {
-                        showError = true
-                        return@Button
-                    }
-                    val current = existingCase
-                    if (caseId != null && current != null) {
-                        viewModel.updateCase(
-                            current.copy(
-                                title = title,
-                                description = description,
-                                date = date,
-                                status = status.name
-                            )
-                        )
-                        onSaved(caseId)
-                    } else {
-                        viewModel.createCase(title, description, date, status) { newId ->
-                            onSaved(newId)
+            if (!caseIsClosed) {
+                Button(
+                    onClick = {
+                        if (!CaseUtils.isValidCase(title, description, date)) {
+                            showError = true
+                            return@Button
                         }
-                    }
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(if (caseId == null) "Crear caso" else "Guardar cambios")
+                        val current = existingCase
+                        if (caseId != null && current != null) {
+                            viewModel.updateCase(
+                                current.copy(
+                                    title = title,
+                                    description = description,
+                                    date = date,
+                                    status = status.name
+                                )
+                            )
+                            onSaved(caseId)
+                        } else {
+                            viewModel.createCase(title, description, date, status) { newId ->
+                                onSaved(newId)
+                            }
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(if (caseId == null) "Crear caso" else "Guardar cambios")
+                }
             }
         }
     }
