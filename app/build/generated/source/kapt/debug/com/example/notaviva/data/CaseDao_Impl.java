@@ -133,7 +133,7 @@ public final class CaseDao_Impl implements CaseDao {
   }
 
   @Override
-  public Object insert(final CaseEntity caseEntity, final Continuation<? super Long> $completion) {
+  public Object insert(final CaseEntity caseEntity, final Continuation<? super Long> arg1) {
     return CoroutinesRoom.execute(__db, true, new Callable<Long>() {
       @Override
       @NonNull
@@ -147,11 +147,11 @@ public final class CaseDao_Impl implements CaseDao {
           __db.endTransaction();
         }
       }
-    }, $completion);
+    }, arg1);
   }
 
   @Override
-  public Object delete(final CaseEntity caseEntity, final Continuation<? super Unit> $completion) {
+  public Object delete(final CaseEntity caseEntity, final Continuation<? super Unit> arg1) {
     return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
       @Override
       @NonNull
@@ -165,11 +165,11 @@ public final class CaseDao_Impl implements CaseDao {
           __db.endTransaction();
         }
       }
-    }, $completion);
+    }, arg1);
   }
 
   @Override
-  public Object update(final CaseEntity caseEntity, final Continuation<? super Unit> $completion) {
+  public Object update(final CaseEntity caseEntity, final Continuation<? super Unit> arg1) {
     return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
       @Override
       @NonNull
@@ -183,7 +183,7 @@ public final class CaseDao_Impl implements CaseDao {
           __db.endTransaction();
         }
       }
-    }, $completion);
+    }, arg1);
   }
 
   @Override

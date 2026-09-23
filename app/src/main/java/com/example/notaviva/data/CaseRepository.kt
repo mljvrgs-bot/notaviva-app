@@ -8,35 +8,70 @@ import kotlinx.coroutines.flow.Flow
  */
 class CaseRepository(private val db: AppDatabase) {
 
-    // ---- Casos ----
-    fun getAllCases(): Flow<List<CaseEntity>> = db.caseDao().getAll()
+    // ============================================================
+    // CASOS
+    // ============================================================
 
-    fun getCaseById(id: Long): Flow<CaseEntity?> = db.caseDao().getById(id)
+    fun getAllCases(): Flow<List<CaseEntity>> =
+        db.caseDao().getAll()
 
-    suspend fun createCase(case: CaseEntity): Long = db.caseDao().insert(case)
+    fun getCaseById(id: Long): Flow<CaseEntity?> =
+        db.caseDao().getById(id)
 
-    suspend fun updateCase(case: CaseEntity) = db.caseDao().update(case)
+    suspend fun createCase(case: CaseEntity): Long =
+        db.caseDao().insert(case)
 
-    suspend fun deleteCase(case: CaseEntity) = db.caseDao().delete(case)
+    suspend fun updateCase(case: CaseEntity) =
+        db.caseDao().update(case)
 
-    // ---- Entrevistas ----
+    suspend fun deleteCase(case: CaseEntity) =
+        db.caseDao().delete(case)
+
+
+    // ============================================================
+    // ENTREVISTAS
+    // ============================================================
+
+    /**
+     * Obtiene las entrevistas de un caso específico.
+     *
+     * Se utiliza en CaseDetailScreen.
+     */
     fun getInterviews(caseId: Long): Flow<List<InterviewEntity>> =
         db.interviewDao().getByCaseId(caseId)
 
-    suspend fun addInterview(interview: InterviewEntity) = db.interviewDao().insert(interview)
+    /**
+     * Obtiene todas las entrevistas junto con
+     * el nombre del caso correspondiente.
+     *
+     * Se utiliza en HomeScreen.
+     */
+    fun getAllInterviewsWithCases(): Flow<List<InterviewWithCase>> =
+        db.interviewDao().getAllWithCase()
 
-    suspend fun updateInterview(interview: InterviewEntity) = db.interviewDao().update(interview)
+    suspend fun addInterview(interview: InterviewEntity) =
+        db.interviewDao().insert(interview)
 
-    suspend fun deleteInterview(interview: InterviewEntity) = db.interviewDao().delete(interview)
+    suspend fun updateInterview(interview: InterviewEntity) =
+        db.interviewDao().update(interview)
 
-    // ---- Evidencias ----
+    suspend fun deleteInterview(interview: InterviewEntity) =
+        db.interviewDao().delete(interview)
+
+
+    // ============================================================
+    // EVIDENCIAS
+    // ============================================================
+
     fun getEvidences(caseId: Long): Flow<List<EvidenceEntity>> =
         db.evidenceDao().getByCaseId(caseId)
 
-    suspend fun addEvidence(evidence: EvidenceEntity) = db.evidenceDao().insert(evidence)
+    suspend fun addEvidence(evidence: EvidenceEntity) =
+        db.evidenceDao().insert(evidence)
 
-    // Nuevo: delega al DAO la actualizacion de una evidencia ya existente.
-    suspend fun updateEvidence(evidence: EvidenceEntity) = db.evidenceDao().update(evidence)
+    suspend fun updateEvidence(evidence: EvidenceEntity) =
+        db.evidenceDao().update(evidence)
 
-    suspend fun deleteEvidence(evidence: EvidenceEntity) = db.evidenceDao().delete(evidence)
+    suspend fun deleteEvidence(evidence: EvidenceEntity) =
+        db.evidenceDao().delete(evidence)
 }

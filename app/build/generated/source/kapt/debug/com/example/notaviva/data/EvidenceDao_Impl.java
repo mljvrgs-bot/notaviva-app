@@ -104,8 +104,7 @@ public final class EvidenceDao_Impl implements EvidenceDao {
   }
 
   @Override
-  public Object insert(final EvidenceEntity evidence,
-      final Continuation<? super Long> $completion) {
+  public Object insert(final EvidenceEntity evidence, final Continuation<? super Long> arg1) {
     return CoroutinesRoom.execute(__db, true, new Callable<Long>() {
       @Override
       @NonNull
@@ -119,12 +118,11 @@ public final class EvidenceDao_Impl implements EvidenceDao {
           __db.endTransaction();
         }
       }
-    }, $completion);
+    }, arg1);
   }
 
   @Override
-  public Object delete(final EvidenceEntity evidence,
-      final Continuation<? super Unit> $completion) {
+  public Object delete(final EvidenceEntity evidence, final Continuation<? super Unit> arg1) {
     return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
       @Override
       @NonNull
@@ -138,12 +136,11 @@ public final class EvidenceDao_Impl implements EvidenceDao {
           __db.endTransaction();
         }
       }
-    }, $completion);
+    }, arg1);
   }
 
   @Override
-  public Object update(final EvidenceEntity evidence,
-      final Continuation<? super Unit> $completion) {
+  public Object update(final EvidenceEntity evidence, final Continuation<? super Unit> arg1) {
     return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
       @Override
       @NonNull
@@ -157,7 +154,7 @@ public final class EvidenceDao_Impl implements EvidenceDao {
           __db.endTransaction();
         }
       }
-    }, $completion);
+    }, arg1);
   }
 
   @Override

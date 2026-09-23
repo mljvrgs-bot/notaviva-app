@@ -228,6 +228,82 @@ public final class InterviewDao_Impl implements InterviewDao {
     });
   }
 
+  @Override
+  public Flow<List<InterviewWithCase>> getAllWithCase() {
+    final String _sql = "\n"
+            + "        SELECT\n"
+            + "            i.id AS id,\n"
+            + "            i.caseId AS caseId,\n"
+            + "            i.personName AS personName,\n"
+            + "            i.date AS date,\n"
+            + "            i.findings AS findings,\n"
+            + "            c.title AS caseTitle\n"
+            + "        FROM interviews i\n"
+            + "        INNER JOIN cases c\n"
+            + "            ON i.caseId = c.id\n"
+            + "        ORDER BY i.id DESC\n"
+            + "        ";
+    final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 0);
+    return CoroutinesRoom.createFlow(__db, false, new String[] {"interviews",
+        "cases"}, new Callable<List<InterviewWithCase>>() {
+      @Override
+      @NonNull
+      public List<InterviewWithCase> call() throws Exception {
+        final Cursor _cursor = DBUtil.query(__db, _statement, false, null);
+        try {
+          final int _cursorIndexOfId = 0;
+          final int _cursorIndexOfCaseId = 1;
+          final int _cursorIndexOfPersonName = 2;
+          final int _cursorIndexOfDate = 3;
+          final int _cursorIndexOfFindings = 4;
+          final int _cursorIndexOfCaseTitle = 5;
+          final List<InterviewWithCase> _result = new ArrayList<InterviewWithCase>(_cursor.getCount());
+          while (_cursor.moveToNext()) {
+            final InterviewWithCase _item;
+            final long _tmpId;
+            _tmpId = _cursor.getLong(_cursorIndexOfId);
+            final long _tmpCaseId;
+            _tmpCaseId = _cursor.getLong(_cursorIndexOfCaseId);
+            final String _tmpPersonName;
+            if (_cursor.isNull(_cursorIndexOfPersonName)) {
+              _tmpPersonName = null;
+            } else {
+              _tmpPersonName = _cursor.getString(_cursorIndexOfPersonName);
+            }
+            final String _tmpDate;
+            if (_cursor.isNull(_cursorIndexOfDate)) {
+              _tmpDate = null;
+            } else {
+              _tmpDate = _cursor.getString(_cursorIndexOfDate);
+            }
+            final String _tmpFindings;
+            if (_cursor.isNull(_cursorIndexOfFindings)) {
+              _tmpFindings = null;
+            } else {
+              _tmpFindings = _cursor.getString(_cursorIndexOfFindings);
+            }
+            final String _tmpCaseTitle;
+            if (_cursor.isNull(_cursorIndexOfCaseTitle)) {
+              _tmpCaseTitle = null;
+            } else {
+              _tmpCaseTitle = _cursor.getString(_cursorIndexOfCaseTitle);
+            }
+            _item = new InterviewWithCase(_tmpId,_tmpCaseId,_tmpPersonName,_tmpDate,_tmpFindings,_tmpCaseTitle);
+            _result.add(_item);
+          }
+          return _result;
+        } finally {
+          _cursor.close();
+        }
+      }
+
+      @Override
+      protected void finalize() {
+        _statement.release();
+      }
+    });
+  }
+
   @NonNull
   public static List<Class<?>> getRequiredConverters() {
     return Collections.emptyList();
