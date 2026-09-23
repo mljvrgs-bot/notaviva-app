@@ -23,7 +23,12 @@ object CaseUtils {
     }
 
     /** Un caso solo se puede publicar/cerrar si tiene al menos una conclusión escrita. */
-    fun canClose(case: CaseEntity): Boolean = case.conclusion.isNotBlank()
+    fun canClose(case: CaseEntity): Boolean = canCloseWithConclusion(case.conclusion)
+
+    // Nuevo: version basada solo en el texto de la conclusion, util cuando
+    // todavia no existe (o no se tiene a mano) un CaseEntity completo,
+    // como al crear un caso nuevo.
+    fun canCloseWithConclusion(conclusion: String): Boolean = conclusion.isNotBlank()
 
     /** Valida los campos obligatorios antes de guardar un caso. */
     fun isValidCase(title: String, description: String, date: String): Boolean =
@@ -50,7 +55,13 @@ object CaseUtils {
     // si todavia no tiene conclusion escrita (reutiliza canClose). Para
     // cualquier otro estado destino, la transicion siempre esta permitida.
     fun canChangeStatusTo(case: CaseEntity, newStatus: CaseStatus): Boolean =
-        if (newStatus == CaseStatus.CERRADO) canClose(case) else true
+        canChangeStatusTo(case.conclusion, newStatus)
+
+    // Nuevo: sobrecarga de canChangeStatusTo que recibe directamente el texto
+    // de la conclusion, para usarse en pantallas como CaseFormScreen donde
+    // aun no existe (creacion) o no se maneja el CaseEntity completo.
+    fun canChangeStatusTo(currentConclusion: String, newStatus: CaseStatus): Boolean =
+        if (newStatus == CaseStatus.CERRADO) canCloseWithConclusion(currentConclusion) else true
 
     // Nuevo: valida los campos obligatorios de una evidencia antes de guardarla.
     fun isValidEvidence(name: String, description: String): Boolean =

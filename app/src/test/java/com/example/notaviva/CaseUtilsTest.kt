@@ -125,6 +125,18 @@ class CaseUtilsTest {
         assertTrue(CaseUtils.canChangeStatusTo(caseWithoutConclusion, CaseStatus.PUBLICADO))
     }
 
+    // ---- Sobrecarga de canChangeStatusTo basada en texto (usada al crear un caso) ----
+
+    @Test
+    fun `canChangeStatusTo with blank conclusion text blocks closing`() {
+        assertFalse(CaseUtils.canChangeStatusTo("", CaseStatus.CERRADO))
+    }
+
+    @Test
+    fun `canChangeStatusTo with conclusion text allows closing`() {
+        assertTrue(CaseUtils.canChangeStatusTo("Se confirmó la irregularidad.", CaseStatus.CERRADO))
+    }
+
     // ---- Evidencias: validaciones ----
 
     @Test

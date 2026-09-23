@@ -126,6 +126,7 @@ fun CaseDetailScreen(
                 )
                 2 -> ConclusionTab(
                     initialText = currentCase.conclusion,
+                    readOnly = caseIsClosed,
                     onSave = { viewModel.updateConclusion(currentCase, it) }
                 )
                 3 -> EvidenciasTab(
@@ -282,20 +283,57 @@ private fun EntrevistasTab(
 }
 
 @Composable
-private fun ConclusionTab(initialText: String, onSave: (String) -> Unit) {
+private fun ConclusionTab(initialText: String, readOnly: Boolean, onSave: (String) -> Unit) {
+    // Modo edicion: activo si aun no hay conclusion guardada, o si el usuario
+    // pulsa "Editar". remember(initialText) tambien lo recalcula automaticamente
+    // cuando la conclusion ya guardada llega desde la base de datos (por ejemplo,
+    // justo despues de guardar), asegurando que se pase a modo solo-lectura.
+    var isEditing by remember(initialText) { mutableStateOf(initialText.isBlank()) }
     var text by remember(initialText) { mutableStateOf(initialText) }
+
     Column(Modifier.padding(16.dp).fillMaxSize()) {
         Text("Conclusión del caso", fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(8.dp))
-        OutlinedTextField(
-            value = text,
-            onValueChange = { text = it },
-            modifier = Modifier.fillMaxWidth().weight(1f, fill = false).height(160.dp),
-            placeholder = { Text("Escribe las conclusiones de la investigación...") }
-        )
-        Spacer(Modifier.height(12.dp))
-        Button(onClick = { onSave(text) }) {
-            Text("Guardar conclusión")
+
+        if (isEditing && !readOnly) {
+            OutlinedTextField(
+                value = text,
+                onValueChange = { text = it },
+                modifier = Modifier.fillMaxWidth().weight(1f, fill = false).height(160.dp),
+                placeholder = { Text("Escribe las conclusiones de la investigación...") }
+            )
+            Spacer(Modifier.height(12.dp))
+            Button(onClick = {
+                onSave(text)
+                // Cambio inmediato a modo lectura; remember(initialText) lo
+                // confirmara de nuevo cuando llegue el valor actualizado.
+                isEditing = false
+            }) {
+                Text("Guardar conclusión")
+            }
+        } else {
+            Text(
+                if (initialText.isBlank()) "Aún no se ha registrado una conclusión para este caso."
+                else initialText
+            )
+            if (!readOnly) {
+                Spacer(Modifier.height(12.dp))
+                TextButton(onClick = {
+                    text = initialText
+                    isEditing = true
+                }) {
+                    Icon(Icons.Default.Edit, contentDescription = null)
+                    Spacer(Modifier.width(4.dp))
+                    Text("Editar conclusión")
+                }
+            } else if (initialText.isBlank()) {
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    "Este caso está cerrado y no tiene conclusión registrada.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
         }
     }
 }

@@ -45,6 +45,10 @@ fun CaseFormScreen(
     var statusMenuExpanded by remember { mutableStateOf(false) }
     var initialized by remember { mutableStateOf(false) }
     var showError by remember { mutableStateOf(false) }
+    // Nuevo: aviso cuando se intenta marcar el caso como Cerrado sin conclusion.
+    // Al crear un caso siempre estara bloqueado, porque este formulario no
+    // maneja la conclusion (esa se escribe desde el detalle del caso).
+    var showCloseBlockedDialog by remember { mutableStateOf(false) }
 
     // Cuando llega el caso existente (modo edición), precargamos los campos una sola vez.
     LaunchedEffect(existingCase) {
@@ -141,7 +145,13 @@ fun CaseFormScreen(
                         DropdownMenuItem(
                             text = { Text(option.label) },
                             onClick = {
-                                status = option
+                                // Nuevo: no se permite seleccionar Cerrado si el caso
+                                // (nuevo o existente) todavia no tiene conclusion.
+                                if (CaseUtils.canChangeStatusTo(existingCase?.conclusion ?: "", option)) {
+                                    status = option
+                                } else {
+                                    showCloseBlockedDialog = true
+                                }
                                 statusMenuExpanded = false
                             }
                         )
@@ -190,6 +200,25 @@ fun CaseFormScreen(
                 }
             }
         }
+    }
+
+    // Nuevo: aviso cuando se intenta marcar el caso como Cerrado sin conclusion.
+    if (showCloseBlockedDialog) {
+        AlertDialog(
+            onDismissRequest = { showCloseBlockedDialog = false },
+            title = { Text("No se puede cerrar el caso") },
+            text = {
+                Text(
+                    if (caseId == null)
+                        "Un caso nuevo no puede crearse como Cerrado: primero créalo y escribe una conclusión desde su detalle."
+                    else
+                        "Para marcar este caso como Cerrado primero debes escribir una conclusión en la pestaña Conclusión, dentro del detalle del caso."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { showCloseBlockedDialog = false }) { Text("Entendido") }
+            }
+        )
     }
 }
 
